@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import './data/questions-data.dart';
+import './questions-view.dart';
+import './quiz-result.dart';
 
 // void main() {
 //   runApp(MyApp());
@@ -6,36 +9,67 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
-  int questonIndex = 0;
+class MyApp extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    var appState = new _MyAppState();
+    return appState;
+  }
+}
+
+class _MyAppState extends State<MyApp> {
+  final Map<int, int> _clickedAnswers = new Map();
+  int _questonIndex = 0;
+  Function _answerQuestion(int answerIndex) {
+    if (_questonIndex < questionsData.length) {
+      _clickedAnswers.addEntries([MapEntry(_questonIndex, answerIndex)]);
+    }
+    return () => setState(
+          () {
+            if (_questonIndex < questionsData.length) {
+              _questonIndex = _questonIndex + 1;
+              print('Answer ' + answerIndex.toString() + ' chosen!');
+            }
+          },
+        );
+  }
+
+  void _resetQuestions() {
+    setState(() {
+      _questonIndex = 0;
+      _clickedAnswers.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    var questions = [
-      'What\'s your favourite color?',
-      'What\'s your favourite animal?'
-    ];
+    print('(re)build widget');
+    final parsedQuestions = parseToQuestionData(questionsData);
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
           title: Text('Quiz App'),
         ),
-        body: Column(
-          children: [
-            Text(questions.elementAt(questonIndex)),
-            RaisedButton(
-              onPressed: () => print('Answer 1 chosen!'),
-              child: Text('Red'),
-            ),
-            RaisedButton(
-              onPressed: () => print('Answer 2 chosen!'),
-              child: Text('Green'),
-            ),
-            RaisedButton(
-              onPressed: () => print('Answer 3 chosen!'),
-              child: Text('Blue'),
-            ),
-          ],
+        body: SingleChildScrollView(
+          child: Column(
+            children: _questonIndex < questionsData.length
+                ? questionView(
+                    parsedQuestions.elementAt(_questonIndex), _answerQuestion)
+                : [
+                    QuizResult(
+                      _clickedAnswers.map(
+                        (key, value) => MapEntry(
+                          parsedQuestions.elementAt(key).question,
+                          parsedQuestions
+                              .elementAt(key)
+                              .answers
+                              .elementAt(value),
+                        ),
+                      ),
+                      _resetQuestions,
+                    )
+                  ],
+          ),
         ),
       ),
     );
