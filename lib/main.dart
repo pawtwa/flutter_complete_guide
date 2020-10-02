@@ -19,15 +19,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final Map<int, int> _clickedAnswers = new Map();
-  int _questonIndex = 0;
+  int _questionIndex = 0;
   Function _answerQuestion(int answerIndex) {
-    if (_questonIndex < questionsData.length) {
-      _clickedAnswers.addEntries([MapEntry(_questonIndex, answerIndex)]);
+    if (_questionIndex < questionsData.length) {
+      _clickedAnswers.addEntries([MapEntry(_questionIndex, answerIndex)]);
     }
     return () => setState(
           () {
-            if (_questonIndex < questionsData.length) {
-              _questonIndex = _questonIndex + 1;
+            if (_questionIndex < questionsData.length) {
+              _questionIndex = _questionIndex + 1;
               print('Answer ' + answerIndex.toString() + ' chosen!');
             }
           },
@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
 
   void _resetQuestions() {
     setState(() {
-      _questonIndex = 0;
+      _questionIndex = 0;
       _clickedAnswers.clear();
     });
   }
@@ -52,9 +52,9 @@ class _MyAppState extends State<MyApp> {
         ),
         body: SingleChildScrollView(
           child: Column(
-            children: _questonIndex < questionsData.length
+            children: _questionIndex < questionsData.length
                 ? questionView(
-                    parsedQuestions.elementAt(_questonIndex), _answerQuestion)
+                    parsedQuestions.elementAt(_questionIndex), _answerQuestion)
                 : [
                     QuizResult(
                       _clickedAnswers.map(
