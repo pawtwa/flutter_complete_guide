@@ -142,10 +142,11 @@ class _MyHomePageBasicState extends State<MyHomePageBasic> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _startAddNewTransaction(context);
-          },
-          child: Icon(Icons.add)),
+        onPressed: () {
+          _startAddNewTransaction(context);
+        },
+        child: Icon(Icons.add),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }

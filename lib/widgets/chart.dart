@@ -29,9 +29,9 @@ class Chart extends StatelessWidget {
           .fold<double>(0, (value, element) => value + element)
           .toStringAsFixed(2);
       return ChartItem(
-          day: DateFormat.E().format(weekDay).substring(0, 1),
+          day: DateFormat.E().format(weekDay) /*.substring(0, 2)*/,
           amount: double.parse(totalSum));
-    });
+    }).reversed.toList();
   }
 
   @override
