@@ -6,30 +6,24 @@ import 'package:flutter_complete_guide/models/transaction.dart';
 class TransactionList extends StatelessWidget {
   final DateFormat dateFormatter = DateFormat.yMMMd(); // ('yyy-MM-dd');
   final List<Transaction> transactions;
+  final Function deleteTransaction;
 
-  TransactionList(this.transactions);
+  TransactionList(this.transactions, this.deleteTransaction);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      // crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: transactions.isEmpty
-          ? [
-              Container(
-                margin: EdgeInsets.only(top: 40),
-                child: Image.asset(
-                  'assets/images/waiting.png',
-                  height: 75,
-                ),
+    return
+        // crossAxisAlignment: CrossAxisAlignment.stretch,
+        transactions.isEmpty
+            ? Center(
+                child: Text('No transaction'),
               )
-            ]
-          : [
-              Container(
+            : Container(
                 // height: 50,
                 child: ListView.builder(
                   itemBuilder: (ctx, index) {
                     return Card(
-                      elevation: 5,
+                      // elevation: 5,
                       margin: EdgeInsets.symmetric(
                         vertical: 8,
                         horizontal: 5,
@@ -51,6 +45,13 @@ class TransactionList extends StatelessWidget {
                         subtitle: Text(
                           DateFormat.yMMMd().format(transactions[index].date),
                         ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          color: Theme.of(context).errorColor,
+                          onPressed: () {
+                            deleteTransaction(transactions[index].id);
+                          },
+                        ),
                       ),
                     );
                   },
@@ -59,9 +60,9 @@ class TransactionList extends StatelessWidget {
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: transactions.length,
                 ),
-              )
-            ]
-      /* transactions
+              );
+
+    /* transactions
               .map((transaction) => Card(
                     child: Row(
                         // crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,7 +117,5 @@ class TransactionList extends StatelessWidget {
                         ]),
                   ))
               .toList(),*/
-      ,
-    );
   }
 }

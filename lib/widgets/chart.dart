@@ -41,6 +41,8 @@ class Chart extends StatelessWidget {
         .fold<double>(
             0, (previousValue, element) => previousValue + element.amount)
         .toStringAsFixed(2);
+    print('amountTotal');
+    print(amountTotal);
     return Card(
       margin: EdgeInsets.symmetric(vertical: 20, horizontal: 4),
       child: Container(

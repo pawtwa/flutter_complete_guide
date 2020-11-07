@@ -1,11 +1,19 @@
+import 'dart:async';
+import 'dart:ui';
+// import 'dart:io';
+
 import 'package:amplify_core/amplify_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:uuid/uuid.dart';
+import 'package:connectivity/connectivity.dart';
+// import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 // import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
 import 'models/transaction.dart';
+import 'services/connection.dart';
 import 'widgets/chart.dart';
 import 'widgets/new_transaction.dart';
 import 'widgets/transaction_list.dart';
@@ -16,8 +24,8 @@ void main() {
 
 class MyApp extends StatelessWidget {
   MyApp() {
-    Intl.defaultLocale = 'pl_PL';
-    initializeDateFormatting('pl_PL', null);
+    Intl.defaultLocale = 'en_GB';
+    initializeDateFormatting('en_GB', null);
   }
 
   // This widget is the root of your application.
@@ -36,11 +44,21 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         primarySwatch: Colors.purple,
+        errorColor: Colors.red,
         // This makes the visual density adapt to the platform that you run
         // the app on. For desktop platforms, the controls will be smaller and
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
         fontFamily: 'Quicksand',
+        textTheme: ThemeData.light().textTheme.copyWith(
+            headline6: TextStyle(
+              fontFamily: 'OpenSans',
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            button: TextStyle(
+              color: Colors.white,
+            )),
         appBarTheme: AppBarTheme(
           textTheme: ThemeData.light().textTheme.copyWith(
                 headline6: TextStyle(
@@ -65,7 +83,24 @@ class MyHomePageBasic extends StatefulWidget {
   _MyHomePageBasicState createState() => _MyHomePageBasicState();
 }
 
+final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+PersistentBottomSheetController _controller;
+
 class _MyHomePageBasicState extends State<MyHomePageBasic> {
+  var _hasConnection;
+
+  StreamSubscription<ConnectivityResult> _connectivitySubscription;
+
+  final snackBarNoInternetConnection = SnackBar(
+    content: Text('No Internet connection!'),
+    backgroundColor: Colors.red,
+  );
+
+  final snackBarInternetConnectionOk = SnackBar(
+    content: Text('Internet connection OK'),
+    backgroundColor: Colors.green,
+  );
+
   final List<Transaction> _transactions = [];
 
   final uuid = Uuid();
@@ -78,36 +113,97 @@ class _MyHomePageBasicState extends State<MyHomePageBasic> {
         .toList();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _connectivitySubscription =
+        ConnectionService.onConnectivityChanged(_updateConnectionStatus);
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    if (!mounted) {
+      return Future.value(null);
+    }
+    setState(() {
+      _hasConnection = ConnectionService.checkConnectivityResult(result);
+      _scaffoldKey.currentState.removeCurrentSnackBar();
+      if (_hasConnection == false) {
+        _scaffoldKey.currentState.showSnackBar(snackBarNoInternetConnection);
+      }
+    });
+  }
+
   void _signIn() async {
     await Amplify.Auth.signIn(username: null, password: null);
   }
 
-  void _addNewTransaction(String title, double amount) {
-    final transaction = Transaction(
-        id: uuid.v1(), title: title, amount: amount, date: DateTime.now());
+  void _addNewTransaction(String title, double amount, DateTime date) {
+    final transaction =
+        Transaction(id: uuid.v1(), title: title, amount: amount, date: date);
     setState(() {
       _transactions.add(transaction);
     });
   }
 
+  void _deleteTransaction(String id) {
+    final transaction = _transactions.firstWhere((element) => element.id == id,
+        orElse: () => null);
+    if (transaction != null) {
+      setState(() {
+        _transactions.remove(transaction);
+      });
+    }
+  }
+
   void _startAddNewTransaction(BuildContext context) {
     showModalBottomSheet(
-        context: context,
-        builder: (ctx) {
-          return Container(
-            padding: EdgeInsets.all(10),
-            /**
+      context: context,
+      builder: (ctx) {
+        return Container(
+          padding: EdgeInsets.all(10),
+          /**
              * Not necessary - fixed
              */
-            // child: GestureDetector(
-            //   onTap: () {},
-            //   child: NewTransaction(_addNewTransaction),
-            //   behavior: HitTestBehavior.opaque,
-            // ),
-            child: NewTransaction(_addNewTransaction),
-          );
-        });
+          // child: GestureDetector(
+          //   onTap: () {},
+          //   child: NewTransaction(_addNewTransaction),
+          //   behavior: HitTestBehavior.opaque,
+          // ),
+          child: NewTransaction(_addNewTransaction),
+        );
+      },
+    );
   }
+
+  // void _settingModalBottomSheet(context) {
+  //   _controller = Scaffold.of(context).showBottomSheet((BuildContext context) {
+  //     return Container(
+  //       padding: EdgeInsets.all(10),
+  //       /**
+  //            * Not necessary - fixed
+  //            */
+  //       // child: GestureDetector(
+  //       //   onTap: () {},
+  //       //   child: NewTransaction(_addNewTransaction),
+  //       //   behavior: HitTestBehavior.opaque,
+  //       // ),
+  //       child: NewTransaction(_addNewTransaction),
+  //     );
+  //   });
+  // }
+
+  // void _closeModalBottomSheet() {
+  //   if (_controller != null) {
+  //     _controller.close();
+  //     _controller = null;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -116,37 +212,85 @@ class _MyHomePageBasicState extends State<MyHomePageBasic> {
     double safeHeight = height - padding.top - padding.bottom;
 
     return Scaffold(
+      key: _scaffoldKey,
       // resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.title),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              _startAddNewTransaction(context);
-            },
-          )
-        ],
+        actions: _hasConnection == false && false
+            ? <Widget>[
+                Icon(
+                  Icons.signal_cellular_alt,
+                  color: Colors.red,
+                ),
+              ]
+            : <Widget>[
+                IconButton(
+                  icon: Icon(
+                    _hasConnection == false
+                        ? Icons.signal_cellular_connected_no_internet_4_bar
+                        : Icons.signal_cellular_4_bar,
+                    color: _hasConnection == false ? Colors.grey : Colors.green,
+                  ),
+                  onPressed: () {
+                    _scaffoldKey.currentState.removeCurrentSnackBar();
+                    _hasConnection == false
+                        ? _scaffoldKey.currentState
+                            .showSnackBar(snackBarNoInternetConnection)
+                        : _scaffoldKey.currentState
+                            .showSnackBar(snackBarInternetConnectionOk);
+                  },
+                ),
+                Builder(
+                  builder: (ctx) => IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: () {
+                      _startAddNewTransaction(ctx);
+                    },
+                  ),
+                ),
+              ],
       ),
-      body: Container(
-        padding: EdgeInsets.only(bottom: 45),
-        height: safeHeight,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Chart(_recentTransactions),
-              TransactionList(_transactions)
-            ],
-          ),
-        ),
+      // body: SingleChildScrollView(
+      //   child: Column(
+      //     crossAxisAlignment: CrossAxisAlignment.stretch,
+      //     children: [
+      //       Chart(_recentTransactions),
+      //       Expanded(
+      //         child: TransactionList(_transactions, _deleteTransaction),
+      //       )
+      //     ],
+      //   ),
+      // ),
+      body: Builder(
+        builder: (ctx) => _hasConnection == null
+            ? Center(
+                child: Text("Checking the app..."),
+              )
+            : _hasConnection == false && false
+                ? Center(child: Text('No Internet Connection'))
+                : Container(
+                    padding: EdgeInsets.only(bottom: 45),
+                    height: safeHeight,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Chart(_recentTransactions),
+                          TransactionList(_transactions, _deleteTransaction)
+                        ],
+                      ),
+                    ),
+                  ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _startAddNewTransaction(context);
-        },
-        child: Icon(Icons.add),
-      ),
+      floatingActionButton: _hasConnection == false && false
+          ? null
+          : Builder(
+              builder: (ctx) => FloatingActionButton(
+                    onPressed: () {
+                      _startAddNewTransaction(ctx);
+                    },
+                    child: Icon(Icons.add),
+                  )),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }

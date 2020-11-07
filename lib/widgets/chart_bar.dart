@@ -9,6 +9,8 @@ class ChartBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(amountTotal);
+    print(amount / amountTotal);
     return Column(
       children: [
         Container(
@@ -24,6 +26,8 @@ class ChartBar extends StatelessWidget {
           height: 60,
           width: 10,
           child: Stack(
+            overflow: Overflow.visible,
+            alignment: Alignment.bottomCenter,
             children: [
               Container(
                 decoration: BoxDecoration(
@@ -34,14 +38,14 @@ class ChartBar extends StatelessWidget {
               FractionallySizedBox(
                 heightFactor: double.parse(
                     (amountTotal > 0 ? amount / amountTotal : 0)
-                        .toStringAsFixed(0)),
+                        .toStringAsFixed(5)),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
